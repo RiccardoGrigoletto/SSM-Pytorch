@@ -50,8 +50,7 @@ except IOError:
 def _draw_single_box(image, xmin, ymin, xmax, ymax, display_str, font, color='black', thickness=4):
   draw = ImageDraw.Draw(image)
   (left, right, top, bottom) = (xmin, xmax, ymin, ymax)
-  draw.line([(left, top), (left, bottom), (right, bottom),
-             (right, top), (left, top)], width=thickness, fill=color)
+  draw.line([(left, top), (right, bottom)], width=thickness, fill=color)
   text_bottom = bottom
   # Reverse list and print from bottom to top.
   text_width, text_height = font.getsize(display_str)
@@ -65,7 +64,11 @@ def _draw_single_box(image, xmin, ymin, xmax, ymax, display_str, font, color='bl
       display_str,
       fill='black',
       font=font)
-
+  
+  #import cv2
+  #cv2.imwrite('/home/riccardo/SSM-forked/SSM-Pytorch/pasted/single_bbox.jpg', np.array(image))
+  #import pdb
+  #pdb.set_trace()
   return image
 
 def draw_bounding_boxes(image, gt_boxes, im_info):
@@ -83,7 +86,7 @@ def draw_bounding_boxes(image, gt_boxes, im_info):
                                 gt_boxes_new[i, 3],
                                 'N%02d-C%02d' % (i, this_class),
                                 FONT,
-                                color=STANDARD_COLORS[this_class % NUM_COLORS])
-
+                                color='red')#STANDARD_COLORS[this_class % NUM_COLORS])
+  
   image[0, :] = np.array(disp_image)
   return image
