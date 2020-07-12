@@ -27,6 +27,10 @@ from nets.mobilenet_v1 import mobilenetv1
 from bitmap import BitMap
 import logging
 import operator
+import random
+import pdb
+import progressbar
+
 
 logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(filename)s[line:%(lineno)d] - %(levelname)s: %(message)s')
 def parse_args():
@@ -59,8 +63,12 @@ def parse_args():
                       help='set config keys', default=None,
                       nargs=argparse.REMAINDER)
 ######################## begin #################################
-  parser.add_argument('--enable_al', help='whether or not to use al process',action='store_true',default=False)
+  parser.add_argument('--enable_al', help='whether or not to use al process',action='store_true',default=True)
   parser.add_argument('--enable_ss', help='whether or not to use ss process',action='store_true',default=True)
+  parser.add_argument('--image_val',
+                      help='method for image validation: ICV, LS',
+                      default='LS',
+                      type=str)
 ######################### end ##################################
   if len(sys.argv) == 1:
     parser.print_help()
@@ -177,6 +185,7 @@ if __name__ == '__main__':
   
   # some parameters
   tao = args.max_iters
+  #DEFAULT gamma = 0.15
   gamma = 0.15;  clslambda = np.array([-np.log(0.9)]*imdb.num_classes)
   # train record
   loopcounter = 0; train_iters = 0;iters_sum = train_iters
@@ -191,7 +200,7 @@ if __name__ == '__main__':
   iters_sum = train_iters;
   sw.train_model(iters_sum)
   while(True):
-      # detact unlabeledidx samples
+      # detect unlabeledidx samples
       unlabeledidx = list(set(range(total_num))-set(bitmapImdb.nonzero()))
       # detect labeledidx
       labeledsample = list(set(bitmapImdb.nonzero()))
@@ -207,6 +216,9 @@ if __name__ == '__main__':
       net.cuda()
       print('Process detect the unlabeled images ...')
       # return detect results of the unlabeledidx samples with the latest model
+      ## Riccardo: randomly selecting k images from the unlabeled dataset, 
+      ## otherwise it is gonna crash in detect_im() (on my laptop) 
+      ##unlabeledidx = random.choices(unlabeledidx,k=10)
       scoreMatrix,boxRecord,yVecs, al_idx = detect_im(net,unlabeledidx,unflippedImdb,clslambda)
       unlabeledidx = [ x for x in unlabeledidx if x not in al_idx ]
       # record some detect results for updatable
@@ -218,14 +230,20 @@ if __name__ == '__main__':
       cls_sum = 0 # used for update clslambda
       ss_avg_score = []
       print('Process Self-supervised Sample Mining...')
+      bar = progressbar.ProgressBar(maxval=len(unlabeledidx), widgets=[progressbar.Bar('=', '[', ']'), ' ', progressbar.Percentage()])
+      bar.start()
       for i in range(len(unlabeledidx)):
+          bar.update(i+1)
           im_boxes = []
           im_cls=[]
           cls_sum += len(boxRecord[i])
           ss_accum_score = 0 # ss_scores of per image
+          ss_accum_boxes = 0
+          max_pred_prob = []
           for j,box in enumerate(boxRecord[i]):
               # score of a box
               boxscore = scoreMatrix[i][j]
+              ss_accum_boxes += boxscore
               # fake label box 
               y = yVecs[i][j]
               # the fai function 
@@ -241,11 +259,29 @@ if __name__ == '__main__':
                      pre_cls = np.where(y==1)[0]
                      pre_box = box
                      curr_roidb = roidb[unlabeledidx[i]]
-                     cross_validate,avg_score = image_cross_validation(net,roidb,labeledsample,curr_roidb,pre_box,pre_cls)
-                     if cross_validate:
+                     validate = False
+                     avg_score = 0
+
+                     torch.cuda.empty_cache()
+
+                     if args.image_val == "ICV":
+                          validate, avg_score = image_cross_validation(net,roidb,labeledsample,curr_roidb,pre_box,pre_cls)
+                          print("image_cross_validation: {}, {}".format(validate, avg_score))
+                     elif args.image_val == "LS":
+                          validate, avg_score, _ = localization_stability(net, roidb, labeledsample, curr_roidb, pre_box, pre_cls)
+                          print("localization_stability: {}, {}".format(validate, avg_score))
+
+                     #pdb.set_trace()
+                     #else:
+                     #    print("AL validator method not found, options: ICV, LS")
+                     #    exit(0)
+                     if validate:
                          im_boxes.append(box)
                          im_cls.append(np.where(y==1)[0])
-                         ss_accum_score += float(avg_score)
+                         if args.image_val == "ICV":
+                            ss_accum_score += float(avg_score)
+                         elif args.image_val == "LS":
+                            ss_accum_score += boxscore * float(avg_score)
                      else:
                          al_candidate_idx.append(unlabeledidx[i])
                          im_boxes = []
@@ -262,13 +298,17 @@ if __name__ == '__main__':
                   break
           # replace the fake ground truth for the ss_candidate                                                         
           if len(im_boxes) != 0:
-              ss_avg_score.append(ss_accum_score/len(im_boxes))
+              if args.image_val == "ICV":
+                  ss_avg_score.append(ss_accum_score/len(im_boxes))
+              elif args.image_val == "LS":
+                  ss_avg_score.append(ss_accum_score/ss_accum_boxes)
               ss_candidate_idx.append(unlabeledidx[i])
               overlaps = np.zeros((len(im_boxes), imdb.num_classes), dtype=np.float32)
               for i in range(len(im_boxes)):
                   overlaps[i, im_cls[i]]=1.0
               overlaps = scipy.sparse.csr_matrix(overlaps)
               ss_fake_gt.append({'boxes':np.array(im_boxes),'gt_classes':np.array(im_cls,dtype=np.int).flatten(),'gt_overlaps':overlaps, 'flipped':False})
+      bar.finish()
       if (args.enable_al and len(al_candidate_idx)<=10) or iters_sum>args.max_iters:
           print ("all process finish at loop ",loopcounter)
           print ('the num of al_candidate :',len(al_candidate_idx)) 
