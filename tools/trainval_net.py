@@ -240,7 +240,12 @@ if __name__ == '__main__':
           ss_accum_score = 0 # ss_scores of per image
           ss_accum_boxes = 0
           max_pred_prob = []
-          for j,box in enumerate(boxRecord[i]):
+          if args.image_val == "LT":
+            curr_roidb = roidb[unlabeledidx[i]]
+            validate, avg_score = localization_tighteness(net, roidb, labeledsample, curr_roidb, pre_box,
+                                                                        pre_cls)
+          else:
+            for j,box in enumerate(boxRecord[i]):
               # score of a box
               boxscore = scoreMatrix[i][j]
               ss_accum_boxes += boxscore

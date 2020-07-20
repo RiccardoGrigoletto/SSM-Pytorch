@@ -222,8 +222,7 @@ def localization_stability(model,roidb,labeledsample,curr_roidb,pre_box,pre_cls)
     ls_validation = 0
     row, col, ch = curr_im.shape
     mean = 0
-    #TODO: tune sigma(s)
-    standard_deviation = [.001, .01, .1, .15, .2]
+    standard_deviation = [.001, .01, .05, .1, .15]
     #scale
     standard_deviation = [i * 256 for i in standard_deviation]
 
@@ -263,6 +262,40 @@ def localization_stability(model,roidb,labeledsample,curr_roidb,pre_box,pre_cls)
     else:
         return False,0, 0
 
+def localization_tighteness(model,roidb,labeledsample,curr_roidb,pre_box,pre_cls):
+    curr_im = cv2.imread(curr_roidb['image'])
+    bbox = pre_box
+    ious = []
+    im_proposal = curr_im[int(bbox[1]):int(bbox[3]),int(bbox[0]):int(bbox[2]),:]
+    proposal_height = im_proposal.shape[0]
+    proposal_width = im_proposal.shape[1]
+    avg_score = 0
+    row, col, ch = curr_im.shape
+    overlap_iou(curr_roidb,bbox)
+
+    for sd in standard_deviation:
+        #add noise to the image
+        gauss = np.random.normal(mean, sd, (row, col, ch))
+        gauss = gauss.reshape(row, col, ch)
+        noisy_im = curr_im + gauss
+        #get predictions of the noisy image
+        pred_scores_noisy_im, pred_boxes_noisy_im = im_detect(model, noisy_im)
+        boxes_noisy_index = pred_scores_noisy_im[:, pre_cls].argmax()
+        pred_latent_score = pred_scores_noisy_im[boxes_noisy_index, pre_cls]
+        pred_latent_boxes = pred_boxes_noisy_im[boxes_noisy_index, 4 * int(pre_cls):4 * (int(pre_cls) + 1)]
+        if len(pred_latent_boxes) == 0:
+            continue
+        overlap_iou = calcu_iou(curr_roidb, pred_latent_boxes)
+        #save the score
+        ious.append(overlap_iou)
+
+    #compute the score for each bbox
+    bbox_score = np.average(ious)
+    #computer the score of the image
+    image_stability = 0
+
+
+    return False,0
 
 import matplotlib as mpl
 #mpl.use('Agg')
