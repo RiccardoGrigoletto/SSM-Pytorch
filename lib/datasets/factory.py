@@ -13,7 +13,7 @@ from __future__ import print_function
 __sets = {}
 from datasets.pascal_voc import pascal_voc
 from datasets.coco import coco
-
+from datasets.icub_world import icub_world
 import numpy as np
 
 # Set up voc_<year>_<split> 
@@ -39,6 +39,19 @@ for year in ['2015']:
     name = 'coco_{}_{}'.format(year, split)
     __sets[name] = (lambda split=split, year=year: coco(split, year))
 
+# Set up iCubWorld-Transformations
+for split in ['train','test']:
+  for supervision in ['supervised', 'unsupervised']:
+    name = ''
+    if split == 'train' and supervision == 'supervised':
+      name = 'train_TASK2_30objs_TRA_supervised'
+    if split == 'test' and supervision == 'supervised':
+      name = 'test_TASK2_30objs_manual_'
+    if split == 'train' and supervision == 'unsupervised':
+      name = 'train_TASK2_30objs_NoTRA_unsupervised'
+
+    if name != '':
+      __sets[name] = (lambda split=split, supervision = supervision: icub_world(split, supervision))
 
 def get_imdb(name):
   """Get an imdb (image database) by name."""

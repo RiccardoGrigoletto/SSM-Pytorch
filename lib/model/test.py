@@ -24,7 +24,7 @@ from model.config import cfg, get_output_dir
 from model.bbox_transform import clip_boxes, bbox_transform_inv
 
 import torch
-
+import random
 def _get_image_blob(im):
   """Converts an image into a network input.
   Arguments:
@@ -108,6 +108,30 @@ def im_detect(net, im):
 
   return scores, pred_boxes
 
+
+def im_detect_with_no_reg(net, im):
+  blobs, im_scales = _get_blobs(im)
+  assert len(im_scales) == 1, "Only single-image batch implemented"
+
+  im_blob = blobs['data']
+  blobs['im_info'] = np.array([im_blob.shape[1], im_blob.shape[2], im_scales[0]], dtype=np.float32)
+
+  _, scores, bbox_pred, rois = net.test_image(blobs['data'], blobs['im_info'])
+
+  boxes = rois[:, 1:5] / im_scales[0]
+  scores = np.reshape(scores, [scores.shape[0], -1])
+  bbox_pred = np.reshape(bbox_pred, [bbox_pred.shape[0], -1])
+  if cfg.TEST.BBOX_REG:
+    # Apply bounding-box regression deltas
+    box_deltas = bbox_pred
+    pred_boxes = bbox_transform_inv(torch.from_numpy(boxes), torch.from_numpy(box_deltas)).numpy()
+    pred_boxes = _clip_boxes(pred_boxes, im.shape)
+  else:
+    # Simply repeat the boxes, once for each class
+    pred_boxes = np.tile(boxes, (1, scores.shape[1]))
+
+  return scores, pred_boxes, np.tile(boxes, (1, scores.shape[1]))
+
 def apply_nms(all_boxes, thresh):
   """Apply non-maximum suppression to all predicted boxes output by the
   test_net method.
@@ -140,6 +164,7 @@ def apply_nms(all_boxes, thresh):
 def test_net(net, imdb, weights_filename, max_per_image=100, thresh=0.):
   np.random.seed(cfg.RNG_SEED)
   """Test a Fast R-CNN network on an image database."""
+  #imdb.image_index = random.choices(imdb.image_index,k=10)
   num_images = len(imdb.image_index)
   # all detections are collected into:
   #  all_boxes[cls][image] = N x 5 array of detections in
@@ -152,6 +177,7 @@ def test_net(net, imdb, weights_filename, max_per_image=100, thresh=0.):
   _t = {'im_detect' : Timer(), 'misc' : Timer()}
 
   for i in range(num_images):
+  #for i in range(10):
     im = cv2.imread(imdb.image_path_at(i))
 
     _t['im_detect'].tic()

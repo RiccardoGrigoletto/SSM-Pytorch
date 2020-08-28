@@ -260,7 +260,7 @@ class imdb(object):
     pass
 from collections import OrderedDict
 class Imdbs(imdb):
-    def __init__(self,imdbs,name = 'voc0712'):
+    def __init__(self,imdbs,name = "voc0712"):
         super(Imdbs,self).__init__(name)
         self.imdb_dict = OrderedDict()
         for imdb in imdbs:

@@ -8,6 +8,7 @@ export PYTHONUNBUFFERED="True"
 GPU_ID=$1
 DATASET=$2
 NET=$3
+AL_VAL=$4
 
 array=( $@ )
 len=${#array[@]}
@@ -39,6 +40,15 @@ case ${DATASET} in
     ANCHORS="[4,8,16,32]"
     RATIOS="[0.5,1,2]"
     ;;
+  icwt)
+    TRAIN_IMDB="train_TASK2_30objs_TRA_supervised+train_TASK2_30objs_NoTRA_unsupervised"
+    TEST_IMDB="test_TASK2_30objs_manual_"
+    STEPSIZE="[8000]"
+    ITERS=8000
+    ANCHORS="[8,16,32]"
+    RATIOS="[0.5,1,2]"
+    SNAPSHOT_ITERS=4000
+    ;;
   *)
     echo "No dataset given"
     exit
@@ -51,15 +61,15 @@ echo Logging output to "$LOG"
 
 set +x
 if [[ ! -z  ${EXTRA_ARGS_SLUG}  ]]; then
-  NET_FINAL=output/${NET}/${TRAIN_IMDB}/${EXTRA_ARGS_SLUG}/${NET}_faster_rcnn_iter_${ITERS}.pth
+  NET_FINAL=output/${NET}/${TRAIN_IMDB}/${EXTRA_ARGS_SLUG}/2/${NET}_faster_rcnn_iter_${ITERS}.pth
 else
-  NET_FINAL=output/${NET}/${TRAIN_IMDB}/default/${NET}_faster_rcnn_iter_${ITERS}.pth
+  NET_FINAL=output/${NET}/${TRAIN_IMDB}/default/2/${NET}_faster_rcnn_iter_${ITERS}.pth
 fi
 set -x
 
 if [ ! -f ${NET_FINAL}.index ]; then
   if [[ ! -z  ${EXTRA_ARGS_SLUG}  ]]; then
-    CUDA_VISIBLE_DEVICES=${GPU_ID} time python ./tools/trainval_net.py \
+    CUDA_VISIBLE_DEVICES=${GPU_ID} time python3.6 ./tools/trainval_net.py \
       --weight data/imagenet_weights/${NET}.pth \
       --imdb ${TRAIN_IMDB} \
       --imdbval ${TEST_IMDB} \
@@ -67,16 +77,18 @@ if [ ! -f ${NET_FINAL}.index ]; then
       --cfg experiments/cfgs/${NET}.yml \
       --tag ${EXTRA_ARGS_SLUG} \
       --net ${NET} \
+      --image_validation ${AL_VAL} \
       --set ANCHOR_SCALES ${ANCHORS} ANCHOR_RATIOS ${RATIOS} \
       TRAIN.STEPSIZE ${STEPSIZE} ${EXTRA_ARGS}
   else
-    CUDA_VISIBLE_DEVICES=${GPU_ID} time python ./tools/trainval_net.py \
+    CUDA_VISIBLE_DEVICES=${GPU_ID} time python3.6 ./tools/trainval_net.py \
       --weight data/imagenet_weights/${NET}.pth \
       --imdb ${TRAIN_IMDB} \
       --imdbval ${TEST_IMDB} \
       --iters ${ITERS} \
       --cfg experiments/cfgs/${NET}.yml \
       --net ${NET} \
+      --image_validation ${AL_VAL} \
       --set ANCHOR_SCALES ${ANCHORS} ANCHOR_RATIOS ${RATIOS} \
       TRAIN.STEPSIZE ${STEPSIZE} ${EXTRA_ARGS}
   fi

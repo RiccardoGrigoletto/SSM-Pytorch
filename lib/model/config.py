@@ -93,7 +93,7 @@ __C.TRAIN.BBOX_REG = True
 __C.TRAIN.BBOX_THRESH = 0.5
 
 # Iterations between snapshots
-__C.TRAIN.SNAPSHOT_ITERS = 10000
+__C.TRAIN.SNAPSHOT_ITERS = 4000
 
 # solver.prototxt specifies the snapshot path prefix, this adds an optional
 # infix to yield the path: <prefix>[_<infix>]_iters_XYZ.caffemodel
@@ -295,7 +295,7 @@ def get_output_dir(imdb, weights_filename):
   outdir = osp.abspath(osp.join(__C.ROOT_DIR, 'output', __C.EXP_DIR, imdb.name))
   if weights_filename is None:
     weights_filename = 'default'
-  outdir = osp.join(outdir, weights_filename)
+  outdir = osp.join(outdir, weights_filename, '1')
   if not os.path.exists(outdir):
     os.makedirs(outdir)
   return outdir
@@ -303,7 +303,7 @@ def get_output_dir(imdb, weights_filename):
 
 def get_output_tb_dir(imdb, weights_filename):
   """Return the directory where tensorflow summaries are placed.
-  If the directory does not exist, it is created.
+  If the  directory does not exist, it is created.
 
   A canonical path is built using the name from an imdb and a network
   (if not None).
@@ -311,7 +311,7 @@ def get_output_tb_dir(imdb, weights_filename):
   outdir = osp.abspath(osp.join(__C.ROOT_DIR, 'tensorboard', __C.EXP_DIR, imdb.name))
   if weights_filename is None:
     weights_filename = 'default'
-  outdir = osp.join(outdir, weights_filename)
+  outdir = osp.join(outdir, weights_filename, '1')
   if not os.path.exists(outdir):
     os.makedirs(outdir)
   return outdir
@@ -362,7 +362,7 @@ def cfg_from_file(filename):
 def cfg_from_list(cfg_list):
   """Set config keys via list (e.g., from command line)."""
   from ast import literal_eval
-  assert len(cfg_list) % 2 == 0
+ # assert len(cfg_list) % 2 == 0
   for k, v in zip(cfg_list[0::2], cfg_list[1::2]):
     key_list = k.split('.')
     d = __C

@@ -4,7 +4,7 @@ from __future__ import print_function
 
 import _init_paths
 from model.config import cfg
-from model.test import im_detect
+from model.test import im_detect, im_detect_with_no_reg
 from model.nms_wrapper import nms
 
 from utils.timer import Timer
@@ -222,7 +222,10 @@ def localization_stability(model,roidb,labeledsample,curr_roidb,pre_box,pre_cls)
     ls_validation = 0
     row, col, ch = curr_im.shape
     mean = 0
+
     standard_deviation = [.001, .01, .05, .1, .15]
+    #old standard_deviation = [.004, .006, .008, .01, .012]
+
     #scale
     standard_deviation = [i * 256 for i in standard_deviation]
 
@@ -262,40 +265,45 @@ def localization_stability(model,roidb,labeledsample,curr_roidb,pre_box,pre_cls)
     else:
         return False,0, 0
 
-def localization_tighteness(model,roidb,labeledsample,curr_roidb,pre_box,pre_cls):
+def localization_tightness(model, roidb, labeledsample, curr_roidb, pre_box, pre_cls, valid_threshold):
     curr_im = cv2.imread(curr_roidb['image'])
-    bbox = pre_box
-    ious = []
-    im_proposal = curr_im[int(bbox[1]):int(bbox[3]),int(bbox[0]):int(bbox[2]),:]
-    proposal_height = im_proposal.shape[0]
-    proposal_width = im_proposal.shape[1]
-    avg_score = 0
-    row, col, ch = curr_im.shape
-    overlap_iou(curr_roidb,bbox)
+    pairs = []
+    #obtain current bounding boxes and classes
 
-    for sd in standard_deviation:
-        #add noise to the image
-        gauss = np.random.normal(mean, sd, (row, col, ch))
-        gauss = gauss.reshape(row, col, ch)
-        noisy_im = curr_im + gauss
-        #get predictions of the noisy image
-        pred_scores_noisy_im, pred_boxes_noisy_im = im_detect(model, noisy_im)
-        boxes_noisy_index = pred_scores_noisy_im[:, pre_cls].argmax()
-        pred_latent_score = pred_scores_noisy_im[boxes_noisy_index, pre_cls]
-        pred_latent_boxes = pred_boxes_noisy_im[boxes_noisy_index, 4 * int(pre_cls):4 * (int(pre_cls) + 1)]
-        if len(pred_latent_boxes) == 0:
-            continue
-        overlap_iou = calcu_iou(curr_roidb, pred_latent_boxes)
-        #save the score
-        ious.append(overlap_iou)
+    #obtain the RPN for the given image
+    pred_scores_im, pred_boxes_im,  pred_boxes_no_reg = im_detect_with_no_reg(model,curr_im)
 
-    #compute the score for each bbox
-    bbox_score = np.average(ious)
-    #computer the score of the image
-    image_stability = 0
+    boxes_index = pred_scores_im[:, pre_cls].argmax()
+    pred_latent_score = pred_scores_im[boxes_index, pre_cls]
+    pred_latent_boxes = pred_boxes_im[boxes_index, 4 * int(pre_cls):4 * (int(pre_cls) + 1)]
+    pred_latent_boxes_no_reg = pred_boxes_no_reg[boxes_index, 4 * int(pre_cls):4 * (int(pre_cls) + 1)]
+    #obtain pairs of RPN boxes and final boxes
+    pair = [pred_latent_boxes,pred_latent_boxes_no_reg,pred_latent_score]
 
+    #compute IoU for every roidb
+    iou = calcu_iou(pair[0], pair[1])
 
-    return False,0
+    #compute the score
+    score = abs(iou + pair[2] - 1)
+
+    if score > valid_threshold:
+        return True, score, pre_box
+    else:
+        return False, 0, 0
+
+def margin_sampling(box_score):
+
+    box_score.sort()
+
+    max1 = box_score[-1]
+    max2 = box_score[-2]
+
+    box_score = 1-(max1-max2)
+    box_score = np.abs(box_score)
+    return box_score
+
+def max_confidence(box_score):
+    return max(box_score)
 
 import matplotlib as mpl
 #mpl.use('Agg')
