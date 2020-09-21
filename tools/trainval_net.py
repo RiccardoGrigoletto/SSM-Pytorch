@@ -104,6 +104,21 @@ def combined_roidb(imdb_names):
         roidb = get_training_roidb(imdb)
     return imdb, roidb
 
+def merge_roidb(imdb_names):
+
+    def get_roidb(imdb_name):
+        imdb = get_imdb(imdb_name)
+        print('Loaded dataset `{:s}` for training'.format(imdb.name))
+        imdb.set_proposal_method(cfg.TRAIN.PROPOSAL_METHOD)
+        print('Set proposal method: {:s}'.format(cfg.TRAIN.PROPOSAL_METHOD))
+        roidb = get_training_roidb(imdb)
+        return roidb
+
+    roidbs = [get_roidb(s) for s in imdb_names.split('+')]
+    roidb = roidbs[0]
+    if len(roidbs) > 1:
+        for r in roidbs[1:]:
+            roidb.extend(r)
 
 ######################## begin #################################
 def get_Imdbs(imdb_names):
@@ -133,7 +148,7 @@ if __name__ == '__main__':
     pprint.pprint(cfg)
     ############################## begin #######################################
     # train set
-    #  imdb, roidb = combined_roidb(args.imdb_name)
+    imdb, roidb = combined_roidb(args.imdb_name)
     imdb = get_Imdbs(args.imdb_name)
     print('using AL/SS validation method:{}'.format(args.image_val))
     # total num_images
@@ -183,11 +198,11 @@ if __name__ == '__main__':
     # some statistic record
     al_num = 0
     ss_num = 0
-    initial_num = len(imdb[imdb.item_name(0)].roidb)
+    initial_num = len(imdb.roidb)
     print('All images used for initial train after flipped, imagenumbers:%d' % (initial_num))
     for i in range(initialnum):
         bitmapImdb.set(i)
-    train_roidb = imdb[imdb.item_name(0)].roidb
+    train_roidb = imdb.roidb
     # pretrained-model
     pretrained_model_name = args.weight
 
@@ -208,7 +223,7 @@ if __name__ == '__main__':
     sw = SolverWrapper(net, imdb, train_roidb, valroidb, output_dir, tb_dir,
                        pretrained_model=pretrained_model_name)
     if args.imdb_name == 'train_TASK2_30objs_TRA_supervised+train_TASK2_30objs_NoTRA_unsupervised':
-        train_iters = 8000
+        train_iters = 20000
     else:
         train_iters = 70000
     iters_sum = train_iters;
@@ -332,19 +347,17 @@ if __name__ == '__main__':
                     image_score = 0
 
                 if image_score < threshold:
-                    v
                     validate = True
                 else:
                     validate = False
 
             if args.image_val == 'MC':
-                threshold = 0.995
+                threshold = 0.95
 
                 if len(box_scores) > 0:
                     image_score = np.average(box_scores)
                 else:
                     image_score = 0
-
                 if image_score > threshold:
                     #val_count += 1
                     validate = True
@@ -361,7 +374,7 @@ if __name__ == '__main__':
 
             # replace the fake ground truth for the ss_candidate
             if len(im_boxes) != 0:
-                if args.image_val == "ICV" or args.image_val == "LT" or args.image_val == "MS":
+                if args.image_val == "ICV" or args.image_val == "LT" or args.image_val == "MS" or args.image_val == "MC":
                     ss_avg_score.append(ss_accum_score / len(im_boxes))
                 elif args.image_val == "LS":
                     ss_avg_score.append(ss_accum_score / ss_accum_boxes)
@@ -451,7 +464,7 @@ if __name__ == '__main__':
             gamma = min(gamma + 0.05, 1)
             cls_loss_sum = 0.0
         if args.imdb_name == 'train_TASK2_30objs_TRA_supervised+train_TASK2_30objs_NoTRA_unsupervised':
-            train_iters = 8000
+            train_iters = 4000
         else:
             train_iters = 20000
         iters_sum += train_iters

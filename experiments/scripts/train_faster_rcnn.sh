@@ -43,11 +43,10 @@ case ${DATASET} in
   icwt)
     TRAIN_IMDB="train_TASK2_30objs_TRA_supervised+train_TASK2_30objs_NoTRA_unsupervised"
     TEST_IMDB="test_TASK2_30objs_manual_"
-    STEPSIZE="[8000]"
-    ITERS=8000
+    STEPSIZE="[4000]"
+    ITERS=16000
     ANCHORS="[8,16,32]"
     RATIOS="[0.5,1,2]"
-    SNAPSHOT_ITERS=4000
     ;;
   *)
     echo "No dataset given"

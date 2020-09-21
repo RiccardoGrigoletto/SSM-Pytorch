@@ -25,17 +25,20 @@ from model.config import cfg
 class icub_world(imdb):
     def __init__(self, image_set, supervision, use_diff = False):
         name = ''
+        self._devkit_path = ''
         if image_set == 'train' and supervision == 'supervised':
             name = 'train_TASK2_30objs_TRA_supervised'
+            self._devkit_path = self._get_default_path()
         if image_set == 'test' and supervision == 'supervised':
-            name = 'test_TASK2_30objs_manual_'
+            name = 'test_TASK2_30objs_manual'
+            self._devkit_path = self._get_test_path()
         if image_set == 'train' and supervision == 'unsupervised':
             name = 'train_TASK2_30objs_NoTRA_unsupervised'
+            self._devkit_path = self._get_default_path()
         assert not name == ''
         imdb.__init__(self, name)
         self._supervision = supervision
         self._image_set = name
-        self._devkit_path = self._get_default_path()
         self._data_path = self._devkit_path
         self._classes = ('__background__',  # always index 0
                          'sodabottle2','sodabottle3','sodabottle4','mug1','mug3','mug4','pencilcase5','pencilcase3',
@@ -94,9 +97,15 @@ class icub_world(imdb):
 
     def _get_default_path(self):
         """
-        Return the default path where PASCAL VOC is expected to be installed.
+        Return the default path where ICWT is expected to be installed.
         """
         return os.path.join(cfg.DATA_DIR, 'iCubWorld-Transformations')
+
+    def _get_test_path(self):
+        """
+        Return the test path where ICWT is expected to be installed.
+        """
+        return os.path.join(cfg.DATA_DIR, 'iCubWorld-Transformations_manual')
 
     def gt_roidb(self):
         """
