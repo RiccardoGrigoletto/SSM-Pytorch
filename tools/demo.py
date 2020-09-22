@@ -66,29 +66,30 @@ def vis_detections(im, class_name, dets,image_name, thresh=0.5):
         proposal_width=proposal.shape[1]
         total_select=3
         fs=open(xml_file,'r').readlines()
-	for i in range(total_select):
+        for i in range(total_select):
             global select_id
-	    select_id += 1
-	    if select_id > len(fs):
-		select_id =0
+            select_id += 1
+            if select_id > len(fs):
+                select_id =0
             xml = fs[select_id].strip('\n')+'.xml'
-	    txt = open(os.path.join(xml_folder, xml),'r')
-	    if class_name not in txt:
-	        select_im_path = os.path.join(jpge_folder, xml.split('.')[0]+'.jpg')
+            txt = open(os.path.join(xml_folder, xml),'r')
+            if class_name not in txt:
+                select_im_path = os.path.join(jpge_folder, xml.split('.')[0]+'.jpg')
                 select_im = cv2.imread(select_im_path)
                 if select_im.shape[0]>proposal_height and select_im.shape[1]>proposal_width:
-		    start_y=random.randint(0,select_im.shape[0]-proposal_height)
+                    start_y=random.randint(0,select_im.shape[0]-proposal_height)
                     start_x=random.randint(0,select_im.shape[1]-proposal_width)
                     combination_im=select_im.copy()
                     combination_im[start_y:start_y+proposal_height, start_x:start_x+proposal_width, :] = proposal[0:proposal_height,0:proposal_width,:]
-		    cv2.imwrite('combination_image/'+xml.split('.')[0]+'.jpg',combination_im)
-            
+                    cv2.imwrite('combination_image/'+xml.split('.')[0]+'.jpg',combination_im)
+                
+        
 	    
 def demo(net, image_name):
     """Detect object classes in an image using pre-computed object proposals."""
 
     # Load the demo image
-    im_file = os.path.join('/home/yanxp/yarley/yanxp/dataset/VOCdevkit2012/VOC2012/JPEGImages', image_name)
+    im_file = os.path.join('/home/riccardo/Downloads/SSM-Pytorch/data/VOCdevkit2012/VOC2012/JPEGImages', image_name)
     im = cv2.imread(im_file)
 
     # Detect all object classes and regress object bounds
@@ -154,10 +155,11 @@ if __name__ == '__main__':
 
     print('Loaded network {:s}'.format(saved_model))
 
-    trainval="/home/yanxp/yarley/yanxp/dataset/VOCdevkit2012/VOC2012/ImageSets/Main/trainval.txt"
+    trainval="/home/riccardo/Downloads/SSM-Pytorch/data/VOCdevkit2012/VOC2012/ImageSets/Main/trainval.txt"
+    fs=open(trainval,'r')
     fs=open(trainval,'r')
     for filename in fs.readlines():
-	im_name=filename.strip('\n')+'.jpg'
-        demo(net, im_name)
+            im_name=filename.strip('\n')+'.jpg'
+            demo(net, im_name)
 
     #plt.show()

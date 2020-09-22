@@ -1,0 +1,15 @@
+data/VOCdevkit2007-1
+data/
+lib/datasets/
+lib/layer_utils/
+lib/model/
+lib/roi_data_layer/
+lib/nets/
+lib/nms/
+output/
+pasted/
+tensorboard/
+*__pycache__/
+log_train_loc_stab.txt
+.idea/
+.vscode/

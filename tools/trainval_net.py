@@ -208,7 +208,6 @@ if __name__ == '__main__':
 
     # some parameters
     tao = args.max_iters
-    # DEFAULT gamma = 0.15
     gamma = 0.15;
     clslambda = np.array([-np.log(0.9)] * imdb.num_classes)
     # train record
@@ -249,9 +248,6 @@ if __name__ == '__main__':
         print('Process detect the unlabeled images ...')
         t0 = time.time()
         # return detect results of the unlabeledidx samples with the latest model
-        ## Riccardo: randomly selecting k images from the unlabeled dataset,
-        ## otherwise it is gonna crash in detect_im() (on my laptop)
-        ## unlabeledidx = random.choices(unlabeledidx, k=100)
         scoreMatrix, boxRecord, yVecs, al_idx = detect_im(net, unlabeledidx, unflippedImdb, clslambda)
         unlabeledidx = [x for x in unlabeledidx if x not in al_idx]
         # record some detect results for updatable
@@ -359,7 +355,6 @@ if __name__ == '__main__':
                 else:
                     image_score = 0
                 if image_score > threshold:
-                    #val_count += 1
                     validate = True
                 else:
                     validate = False
@@ -386,8 +381,6 @@ if __name__ == '__main__':
                 ss_fake_gt.append({'boxes': np.array(im_boxes), 'gt_classes': np.array(im_cls, dtype=np.int).flatten(),
                                    'gt_overlaps': overlaps, 'flipped': False})
 
-        #print("validations: {} , ratio: {}".format(val_count, val_count / len(unlabeledidx)))
-        # bar.finish()
         print("Time elapsed for validation: {}".format(time.time() - t1))
         print("Total time elapsed for sample mining: {}".format(time.time() - t0))
         if (args.enable_al and len(al_candidate_idx) <= 10) or iters_sum > args.max_iters:

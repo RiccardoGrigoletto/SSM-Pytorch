@@ -73,7 +73,6 @@ def judge_y(score):
 def detect_im(net, detect_idx, imdb,clslambda):
     roidb = imdb.roidb
     allBox =[]; allScore = [];  allY=[] ; al_idx = []
-    #iMax = np.amax(detect_idx)
     for i in detect_idx:
         imgpath = imdb.image_path_at(i)
         im = cv2.imread(imgpath)
@@ -81,7 +80,6 @@ def detect_im(net, detect_idx, imdb,clslambda):
 
         timer = Timer()
         timer.tic()
-        #print("%d/%d"%(i,iMax))
         scores, boxes = im_detect(net, im)
         timer.toc()
         
@@ -180,8 +178,6 @@ def image_cross_validation(model,roidb,labeledsample,curr_roidb,pre_box,pre_cls)
             start_x = random.randint(0,select_im.shape[1]-proposal_width_resize)
             original_boxex = [start_x,start_y,start_x+proposal_width_resize,start_y+proposal_height_resize]
             pasted_image[start_y:start_y+proposal_height_resize,start_x:start_x+proposal_width_resize,:] = resize_proposal_im[0:proposal_height_resize,0:proposal_width_resize,:]
-            # redetect pasted_image
-            # curr_select += 1
             pred_scores_pasted,pred_boxes_pasted = im_detect(model,pasted_image)
             boxes_pasted_index = pred_scores_pasted[:,pre_cls].argmax()
             pred_lattent_score = pred_scores_pasted[boxes_pasted_index,pre_cls]
@@ -190,9 +186,6 @@ def image_cross_validation(model,roidb,labeledsample,curr_roidb,pre_box,pre_cls)
                 continue
             overlape_iou = calcu_iou(original_boxex,pred_lattent_boxes)
             curr_select += 1
-            #import time
-            #t0 = time.time()
-            #cv2.imwrite('/home/riccardo/SSM-Pytorch/pasted/'+str(t0)+'.jpg',pasted_image)
             if pred_lattent_score > 0.5 and overlape_iou > 0.5:
                 cross_validation += 1
                 avg_score += pred_lattent_score
@@ -224,7 +217,6 @@ def localization_stability(model,roidb,labeledsample,curr_roidb,pre_box,pre_cls)
     mean = 0
 
     standard_deviation = [.001, .01, .05, .1, .15]
-    #old standard_deviation = [.004, .006, .008, .01, .012]
 
     #scale
     standard_deviation = [i * 256 for i in standard_deviation]
@@ -243,13 +235,6 @@ def localization_stability(model,roidb,labeledsample,curr_roidb,pre_box,pre_cls)
         pred_latent_boxes = pred_boxes_noisy_im[boxes_noisy_index, 4 * int(pre_cls):4 * (int(pre_cls) + 1)]
 
         pred_latent_boxes_matrix = np.array([pred_latent_boxes])
-        # save noisy_image
-        #import time
-        #t0 = time.time()
-        #im_bbox = draw_bounding_boxes(noisy_im, pred_boxes_noisy_im, [1,1,1])
-        #cv2.imwrite('/home/riccardo/SSM-forked/SSM-Pytorch/pasted/' + str(t0) + '_bbox.jpg', im_bbox)
-        #cv2.imwrite('/home/riccardo/SSM-forked/SSM-Pytorch/pasted/' + str(t0) + '.jpg', noisy_im)
-
         #calculate iou
         overlap_iou = calcu_iou(original_boxes, pred_latent_boxes)
 
