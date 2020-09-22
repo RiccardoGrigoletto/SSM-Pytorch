@@ -1,3 +1,47 @@
+# Scoring functions evaluation for active learning in humanoid robots 
+
+**<a href="https://www.overleaf.com/read/jywqvqyfvwcd">Thesis Manuscript</a>**
+
+<a href="https://riccardogrigoletto.github.io">Grigoletto Riccardo</a>
+
+
+### License
+
+For Academic Research Use Only!
+
+### Description
+
+This repository contains the code developed for Grigoletto Riccardo's master thesis, the starting point of the code is the SSM pipeline, please refer to the description below for basic installation.
+
+### Strict Requirements
+
+See Strict Requirements below (Same as SSM).
+
+### Dependencies 
+
+See Dependencies below (Same as SSM).
+
+### Datasets/Pre-trained model
+
+See Datasets/Pre-trained model below (Same as SSM).
+
+An additional dataset used is iCWT, the publication is work in progress.
+
+### Usage
+
+1. training
+
+    Before training, please prepare your dataset and pre-trained model and store them in the right path as R-FCN.
+You can go to ./tools/ and modify train_net.py to reset some parameters. Then, simply run sh ./train_voc.sh or ./train_icwt.sh.
+
+2. testing
+
+    Before testing, you can modify test.sh to choose the trained model path, then simply run sh ./test_voc.sh or ./test_icwt.sh to get the evaluation result.
+    
+### Misc
+
+Tested on Ubuntu 18.04 with a Tesla K40 GPU (12G) and Intel(R) Xeon(R) CPU E5-2620 v4 @ 2.10GHz.
+
 # SSM (the Unofficial Version of Pytorch Implementation)
 
 **<a href="https://arxiv.org/pdf/1803.09867.pdf">Towards Human-Machine Cooperation: Self-supervised Sample Mining for Object Detection</a>**
@@ -47,6 +91,7 @@ The code is built on top of https://github.com/ruotianluo/pytorch-faster-rcnn. P
 1. In our paper, we used Pascal VOC2007/VOC2012 and COCO as our datasets, and res101.pth model as our pre-trained model.
 
 2. Please download ImageNet-pre-trained res101.pth model manually, and put them into $SSM_ROOT/data/imagenet_models
+
 
 ### Usage
 
