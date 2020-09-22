@@ -32,12 +32,15 @@ An additional dataset used is iCWT, the publication is work in progress.
 1. training
 
     Before training, please prepare your dataset and pre-trained model and store them in the right path as R-FCN.
-You can go to ./tools/ and modify train_net.py to reset some parameters. Then, simply run sh ./train_voc.sh or ./train_icwt.sh.
-
+    
+    You can go to ./tools/ and modify train_net.py to reset some parameters. Then, simply run sh ./train_voc.sh or ./train_icwt.sh.
+    
+    IMPORTANT: The last parameter refers to the scoring function to use: ICV, MC, MS, LT, LS
 2. testing
 
     Before testing, you can modify test.sh to choose the trained model path, then simply run sh ./test_voc.sh or ./test_icwt.sh to get the evaluation result.
     
+    IMPORTANT: You need to change the --model parameter in order to get the right snapshot file.    
 ### Misc
 
 Tested on Ubuntu 18.04 with a Tesla K40 GPU (12G) and Intel(R) Xeon(R) CPU E5-2620 v4 @ 2.10GHz.
